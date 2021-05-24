@@ -171,7 +171,30 @@ public class MainActivity extends AppCompatActivity {
         // Generate "Stroke"
         View stroke = new View(this);
         GradientDrawable shape =  new GradientDrawable();
-        shape.setCornerRadius(100);
+
+            // Visually connect related entries by only rounding the corners at the very start and the very end of the report group (e.g. "*Exception.. ..at.. ..at.. ..at..") and removing redundant parts of the following reports
+            try {
+                if (content.contains("Exception") && log.get(1).contains("\tat")) {
+                    shape.setCornerRadii(new float[]{100, 100, 100, 100, 0, 0, 0, 0});
+                }
+                else if (content.contains(": \nat") && !log.get(1).contains("\tat")) {
+                    shape.setCornerRadii(new float[]{0, 0, 0, 0, 100, 100, 100, 100});
+                    content = content.substring(content.indexOf("at"));
+                }
+                else if (content.contains(": \nat"))
+                    content = content.substring(content.indexOf("at"));
+
+                else if (!content.contains(": \nat"))
+                    shape.setCornerRadii(new float[]{100, 100, 100, 100, 100, 100, 100, 100});
+            } catch(IndexOutOfBoundsException e){
+                if(content.contains(": \nat")) {
+                    shape.setCornerRadii(new float[]{0, 0, 0, 0, 100, 100, 100, 100});
+                    content = content.substring(content.indexOf("at"));
+                }
+                else
+                    shape.setCornerRadii(new float[]{100, 100, 100, 100, 100, 100, 100, 100});
+            }
+
         stroke.setBackground(shape);
         stroke.setId(View.generateViewId());
         stroke.setLayoutParams(new ViewGroup.MarginLayoutParams(dpToPixel(8), 0));
@@ -227,8 +250,22 @@ public class MainActivity extends AppCompatActivity {
         cs.connect(tv.getId(),ConstraintSet.LEFT,stroke.getId(),ConstraintSet.LEFT,dpToPixel(20));
         cs.connect(tv.getId(),ConstraintSet.TOP,ConstraintSet.PARENT_ID,ConstraintSet.TOP,dpToPixel(5));
         cs.connect(tv.getId(),ConstraintSet.BOTTOM,ConstraintSet.PARENT_ID,ConstraintSet.BOTTOM,dpToPixel(5));
-        cs.applyTo(cl);
 
+        try {
+            if (content.contains("Exception") && log.get(1).contains("\tat"))
+                cs.connect(stroke.getId(), ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, 0);
+            else if(content.startsWith("at") && log.get(1).contains("\tat")) {
+                cs.connect(stroke.getId(), ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 0);
+                cs.connect(stroke.getId(), ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, 0);
+            }
+            else if(content.startsWith("at"))
+                cs.connect(stroke.getId(), ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 0);
+        } catch(IndexOutOfBoundsException ignored) {
+            if(content.startsWith("at"))
+                cs.connect(stroke.getId(), ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 0);
+        }
+
+        cs.applyTo(cl);
         ll.addView(cl);
 
         // Scroll to the (new) bottom if enabled
