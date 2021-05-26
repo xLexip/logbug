@@ -59,11 +59,47 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <View
-            android:id="@+id/actioBarDevider"
+            android:id="@+id/actionBarDevider"
             android:layout_width="0dp"
             android:layout_height="1dp"
             android:background="@color/devider"
             app:layout_constraintBottom_toBottomOf="parent" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <FrameLayout
+        android:id="@+id/floatingLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end|bottom"
+        android:alpha="0.7"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/floatingAutoscrollBtn"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="end|bottom"
+            android:layout_margin="16dp"
+            android:backgroundTint="@color/fg"
+            android:contentDescription="@string/enable_autoscroll"
+            android:elevation="0dp"
+            app:borderWidth="0dp"
+            app:elevation="0dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:elevation="10dp"
+            android:text="▼"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textColor="@color/bg" />
+
+    </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

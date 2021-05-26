@@ -33,6 +33,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.analytics.FirebaseAnalytics;
 
 import java.io.BufferedReader;
@@ -45,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseAnalytics mFirebaseAnalytics;
     private ArrayList<String> log;
     private boolean autoscroll;
+    private FloatingActionButton floatingAutoscrollBtn;
     private LinearLayout ll;
 
     @Override
@@ -61,13 +63,19 @@ public class MainActivity extends AppCompatActivity {
         sv.setOnScrollChangeListener(new View.OnScrollChangeListener() {
             @Override
             public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
-                View view = (View) sv.getChildAt(sv.getChildCount() - 1);
-                // Toggle autoscroll depending on the scroll position
-                int diff = (view.getBottom() - (sv.getHeight() + sv.getScrollY()));
-                if (diff == 0) // If the scrollview is at the very bottom
+
+                // Enable autoscroll when the scrollview is at the very bottom and show the floating activation button otherwise
+                if ((((View) sv.getChildAt(sv.getChildCount() - 1)).getBottom() - (sv.getHeight() + sv.getScrollY())) < 300) {
                     autoscroll = true;
+                    findViewById(R.id.floatingLayout).setVisibility(View.GONE);
+                }
                 else
-                    autoscroll = false;
+                    findViewById(R.id.floatingLayout).setVisibility(View.VISIBLE);
+
+                // Disable autoscroll as soon as the user scrolls up
+                if(oldScrollY>scrollY) {
+                    autoscroll= false;
+                }
             }
         });
 
@@ -77,13 +85,16 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     log = new ArrayList<String>();
                     Process process = Runtime.getRuntime().exec("logcat");
-                    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                    String line = "";
-                    while ((line = bufferedReader.readLine()) != null) {
-                        log.add(line);
+                    BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                    while (true) {
+                        String line = br.readLine();
+                        if (line == null) {
+                            Thread.sleep(500);
+                        } else
+                            log.add(line);
                     }
                 }
-                catch (IOException e) {
+                catch (IOException|InterruptedException e) {
                     Log.e(this.getName(),"IOExeption while reading logcat");
                     e.printStackTrace();
                 }
@@ -94,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
         new Thread() {
             public void run() {
                 while (true) {
-                    try { Thread.sleep(10); }
+                    try { Thread.sleep(8); }
                     catch (InterruptedException ignored) {}
                     MainActivity.this.runOnUiThread(new Runnable() {
                         public void run() {
@@ -103,11 +114,23 @@ public class MainActivity extends AppCompatActivity {
                                 addEntry(getEntryCategory(line), polishContent(line));
                                 log.remove(0);
                             }
+                            else if(autoscroll)
+                                ((ScrollView)findViewById(R.id.scrollView)).fullScroll(View.FOCUS_DOWN);
                         }
                     });
                 }
             }
         }.start();
+
+        floatingAutoscrollBtn = findViewById(R.id.floatingAutoscrollBtn);
+        floatingAutoscrollBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ((ScrollView)findViewById(R.id.scrollView)).fullScroll(View.FOCUS_DOWN);
+                autoscroll = true;
+                findViewById(R.id.floatingLayout).setVisibility(View.GONE);
+            }
+        });
     }
 
     /**

@@ -4,6 +4,7 @@
     <!-- Global colors -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="dark">#FF121922</color>
 
     <!-- Entry colors -->
     <color name="verbose">#2D3C96</color>
