@@ -105,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
         new Thread() {
             public void run() {
                 while (true) {
-                    try { Thread.sleep(8); }
+                    try { Thread.sleep(11); }
                     catch (InterruptedException ignored) {}
                     MainActivity.this.runOnUiThread(new Runnable() {
                         public void run() {
