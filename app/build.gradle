@@ -6,15 +6,18 @@ plugins {
     id 'com.google.firebase.appdistribution'
 }
 
+def vProps = new Properties()
+file("version.properties").withInputStream { vProps.load(it) }
+
 android {
     compileSdkVersion 30
 
     defaultConfig {
-        applicationId "dev.lexip.logcat"
-        minSdkVersion 26
-        targetSdkVersion 30
-        versionCode 1
-        versionName "1.0"
+        applicationId = vProps.getProperty("applicationId")
+        minSdkVersion = vProps.getProperty("minSdkVersion")
+        targetSdkVersion = vProps.getProperty("targetSdkVersion")
+        versionCode = vProps.getProperty("versionCode")
+        versionName = vProps.getProperty("versionName")
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
