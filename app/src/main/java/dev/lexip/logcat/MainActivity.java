@@ -250,9 +250,9 @@ public class MainActivity extends AppCompatActivity {
         TextView tv = new TextView(this);
         tv.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         tv.setId(TextView.generateViewId());
-        Typeface tf = ResourcesCompat.getFont(this, R.font.ubuntumono_italic);
+        Typeface tf = ResourcesCompat.getFont(this, R.font.robotomono_regular);
+        tv.setTextSize(12);
         tv.setTypeface(tf);
-        // tv.setTextIsSelectable(true);
         tv.setText(content);
         tv.setLongClickable(true);
         tv.setOnClickListener(new View.OnClickListener() {
