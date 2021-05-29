@@ -25,12 +25,19 @@ import androidx.core.content.res.ResourcesCompat;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -44,7 +51,16 @@ import java.util.ArrayList;
 public class MainActivity extends AppCompatActivity {
 
     private FirebaseAnalytics mFirebaseAnalytics;
-    private ArrayList<String> log;
+    private ArrayList<String> rawlog;
+    private ArrayList<Object[]> log;
+    private String filterString;
+    private ArrayList<ConstraintLayout> verboseEntries;
+    private ArrayList<ConstraintLayout> debugEntries;
+    private ArrayList<ConstraintLayout> infoEntries;
+    private ArrayList<ConstraintLayout> warnEntries;
+    private ArrayList<ConstraintLayout> errorEntries;
+    private ArrayList<ConstraintLayout> fatalEntries;
+    private ArrayList<ConstraintLayout> otherEntries;
     private boolean autoscroll;
     private FloatingActionButton floatingAutoscrollBtn;
     private LinearLayout ll;
@@ -53,6 +69,16 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        log = new ArrayList<Object[]>();
+        verboseEntries = new ArrayList<ConstraintLayout>();
+        debugEntries = new ArrayList<ConstraintLayout>();
+        infoEntries = new ArrayList<ConstraintLayout>();
+        warnEntries = new ArrayList<ConstraintLayout>();
+        errorEntries = new ArrayList<ConstraintLayout>();
+        fatalEntries = new ArrayList<ConstraintLayout>();
+        otherEntries = new ArrayList<ConstraintLayout>();
+        filterString = "";
 
         // Obtain the FirebaseAnalytics instance.
         mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
@@ -83,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
         new Thread() {
             public void run() {
                 try {
-                    log = new ArrayList<String>();
+                    rawlog = new ArrayList<String>();
                     Process process = Runtime.getRuntime().exec("logcat");
                     BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
                     while (true) {
@@ -91,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
                         if (line == null) {
                             Thread.sleep(500);
                         } else
-                            log.add(line);
+                            rawlog.add(line);
                     }
                 }
                 catch (IOException|InterruptedException e) {
@@ -109,10 +135,10 @@ public class MainActivity extends AppCompatActivity {
                     catch (InterruptedException ignored) {}
                     MainActivity.this.runOnUiThread(new Runnable() {
                         public void run() {
-                            if(!log.isEmpty()) {
-                                String line = log.get(0);
+                            if(!rawlog.isEmpty()) {
+                                String line = rawlog.get(0);
                                 addEntry(getEntryCategory(line), polishContent(line));
-                                log.remove(0);
+                                rawlog.remove(0);
                             }
                             else if(autoscroll)
                                 ((ScrollView)findViewById(R.id.scrollView)).fullScroll(View.FOCUS_DOWN);
@@ -122,6 +148,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }.start();
 
+        // Initialize floating button for autoscroll
         floatingAutoscrollBtn = findViewById(R.id.floatingAutoscrollBtn);
         floatingAutoscrollBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -131,6 +158,110 @@ public class MainActivity extends AppCompatActivity {
                 findViewById(R.id.floatingLayout).setVisibility(View.GONE);
             }
         });
+
+        // Initialize filter stuff
+        ((ImageView) findViewById(R.id.filterIcon)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if((findViewById(R.id.filterLayout).getVisibility() == View.VISIBLE)) {
+                    applyFilter();
+                }
+                else
+                    findViewById(R.id.filterLayout).setVisibility(View.VISIBLE);
+            }
+        });
+        ((Button)findViewById(R.id.filterApplyBtn)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                applyFilter();
+            }
+        });
+        ((EditText)findViewById(R.id.searchBar)).addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                applyFilter();
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+
+            }
+        });
+    }
+
+    /**
+     * Applies the filters in separate thread
+     */
+    private void applyFilter(){
+        new Thread() {
+            public void run() {
+                MainActivity.this.runOnUiThread(new Runnable() {
+                    public void run() {
+                        // Process Checkboxes
+                        if (((CheckBox) findViewById(R.id.verboseCheck)).isChecked())
+                            setTypeVisibility('V', View.VISIBLE);
+                        else
+                            setTypeVisibility('V', View.GONE);
+
+                        if (((CheckBox) findViewById(R.id.debugCheck)).isChecked())
+                            setTypeVisibility('D', View.VISIBLE);
+                        else
+                            setTypeVisibility('D', View.GONE);
+
+                        if (((CheckBox) findViewById(R.id.infoCheck)).isChecked())
+                            setTypeVisibility('I', View.VISIBLE);
+                        else
+                            setTypeVisibility('I', View.GONE);
+
+                        if (((CheckBox) findViewById(R.id.warnCheck)).isChecked())
+                            setTypeVisibility('W', View.VISIBLE);
+                        else
+                            setTypeVisibility('W', View.GONE);
+
+                        if (((CheckBox) findViewById(R.id.errorCheck)).isChecked())
+                            setTypeVisibility('E', View.VISIBLE);
+                        else
+                            setTypeVisibility('E', View.GONE);
+
+                        if (((CheckBox) findViewById(R.id.fatalCheck)).isChecked())
+                            setTypeVisibility('F', View.VISIBLE);
+                        else
+                            setTypeVisibility('F', View.GONE);
+                        findViewById(R.id.filterLayout).setVisibility(View.GONE);
+
+                        filterString = ((EditText)findViewById(R.id.searchBar)).getText().toString();
+                        // Show/Hide the search bar
+                        ConstraintSet cs = new ConstraintSet();
+                        cs.clone((ConstraintLayout)findViewById(R.id.constraintLayout));
+                        if(((Switch)findViewById(R.id.searchbarSwitch)).isChecked()) {
+                            findViewById(R.id.searchBar).setVisibility(View.VISIBLE);
+                            cs.connect(R.id.scrollView,ConstraintSet.TOP,ConstraintSet.PARENT_ID,ConstraintSet.TOP,dpToPixel(82));
+                        } else {
+                            findViewById(R.id.searchBar).setVisibility(View.GONE);
+                            cs.connect(R.id.scrollView,ConstraintSet.TOP,ConstraintSet.PARENT_ID,ConstraintSet.TOP,dpToPixel(48));
+                            filterString = "";
+                        }
+                        cs.applyTo((ConstraintLayout)findViewById(R.id.constraintLayout));
+
+                        if(filterString.isEmpty())
+                            return;
+
+                        // Process search input
+                        for(int i=0; i<log.size();i++){
+                            if(log.get(i)[1].toString().replaceAll(" ","").contains(filterString))
+                                ((ConstraintLayout)log.get(i)[0]).setVisibility(View.VISIBLE);
+                            else
+                                ((ConstraintLayout)log.get(i)[0]).setVisibility(View.GONE);
+                        }
+                    }
+                });
+            }
+        }.start();
     }
 
     /**
@@ -197,10 +328,10 @@ public class MainActivity extends AppCompatActivity {
 
             // Visually connect related entries by only rounding the corners at the very start and the very end of the report group (e.g. "*Exception.. ..at.. ..at.. ..at..") and removing redundant parts of the following reports
             try {
-                if (content.contains("Exception") && log.get(1).contains("\tat")) {
+                if (content.contains("Exception") && rawlog.get(1).contains("\tat")) {
                     shape.setCornerRadii(new float[]{100, 100, 100, 100, 0, 0, 0, 0});
                 }
-                else if (content.contains(": \nat") && !log.get(1).contains("\tat")) {
+                else if (content.contains(": \nat") && !rawlog.get(1).contains("\tat")) {
                     shape.setCornerRadii(new float[]{0, 0, 0, 0, 100, 100, 100, 100});
                     content = content.substring(content.indexOf("at"));
                 }
@@ -222,29 +353,51 @@ public class MainActivity extends AppCompatActivity {
         stroke.setId(View.generateViewId());
         stroke.setLayoutParams(new ViewGroup.MarginLayoutParams(dpToPixel(8), 0));
         cl.addView(stroke);
-        switch (type) {  // Set the type-based color
+        switch (type) {  // Set the type-based stroke color, maintain the the corresponding arraylist and apply the filters
             case 'V': // Verbose
                 shape.setColor(ResourcesCompat.getColor(getResources(), R.color.verbose, getTheme()));
+                verboseEntries.add(cl);
+                if(!((CheckBox)findViewById(R.id.verboseCheck)).isChecked())
+                    cl.setVisibility(View.GONE);
                 break;
             case 'D': // Debug
                 shape.setColor(ResourcesCompat.getColor(getResources(), R.color.debug, getTheme()));
+                debugEntries.add(cl);
+                if(!((CheckBox)findViewById(R.id.debugCheck)).isChecked())
+                    cl.setVisibility(View.GONE);
                 break;
             case 'I': // Info
                 shape.setColor(ResourcesCompat.getColor(getResources(), R.color.info, getTheme()));
+                infoEntries.add(cl);
+                if(!((CheckBox)findViewById(R.id.infoCheck)).isChecked())
+                    cl.setVisibility(View.GONE);
                 break;
             case 'W': // Warning
                 shape.setColor(ResourcesCompat.getColor(getResources(), R.color.warning, getTheme()));
+                warnEntries.add(cl);
+                if(!((CheckBox)findViewById(R.id.warnCheck)).isChecked())
+                    cl.setVisibility(View.GONE);
                 break;
             case 'E': // Error
                 shape.setColor(ResourcesCompat.getColor(getResources(), R.color.error, getTheme()));
+                errorEntries.add(cl);
+                if(!((CheckBox)findViewById(R.id.errorCheck)).isChecked())
+                    cl.setVisibility(View.GONE);
                 break;
             case 'F': // Fatal
                 shape.setColor(ResourcesCompat.getColor(getResources(), R.color.fatal, getTheme()));
+                fatalEntries.add(cl);
+                if(!((CheckBox)findViewById(R.id.fatalCheck)).isChecked())
+                    cl.setVisibility(View.GONE);
                 break;
-            default: // Unspecified (e.g. "--- beginning of crash" reports)
+            default: // Others (e.g. "--- beginning of crash" reports)
                 shape.setColor(ResourcesCompat.getColor(getResources(), R.color.fg, getTheme()));
+                otherEntries.add(cl);
                 break;
         }
+        // Do not show new entries that do not match the filter string
+        if(!filterString.isEmpty() && !content.contains(filterString))
+            cl.setVisibility(View.GONE);
 
         // Generate TextView
         TextView tv = new TextView(this);
@@ -275,9 +428,9 @@ public class MainActivity extends AppCompatActivity {
         cs.connect(tv.getId(),ConstraintSet.BOTTOM,ConstraintSet.PARENT_ID,ConstraintSet.BOTTOM,dpToPixel(5));
 
         try {
-            if (content.contains("Exception") && log.get(1).contains("\tat"))
+            if (content.contains("Exception") && rawlog.get(1).contains("\tat"))
                 cs.connect(stroke.getId(), ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, 0);
-            else if(content.startsWith("at") && log.get(1).contains("\tat")) {
+            else if(content.startsWith("at") && rawlog.get(1).contains("\tat")) {
                 cs.connect(stroke.getId(), ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 0);
                 cs.connect(stroke.getId(), ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, 0);
             }
@@ -291,9 +444,41 @@ public class MainActivity extends AppCompatActivity {
         cs.applyTo(cl);
         ll.addView(cl);
 
+        log.add(new Object[]{cl,content});
+
         // Scroll to the (new) bottom if enabled
         if(autoscroll)
             ((ScrollView)findViewById(R.id.scrollView)).fullScroll(View.FOCUS_DOWN);
+    }
+
+    private void setTypeVisibility(char type, int visibility){
+        ArrayList targetArrayList;
+        switch (type) {
+            case 'V': // Verbose
+                targetArrayList = verboseEntries;
+                break;
+            case 'D': // Debug
+                targetArrayList = debugEntries;
+                break;
+            case 'I': // Info
+                targetArrayList = infoEntries;
+                break;
+            case 'W': // Warning
+                targetArrayList = warnEntries;
+                break;
+            case 'E': // Error
+                targetArrayList = errorEntries;
+                break;
+            case 'F': // Fatal
+                targetArrayList = fatalEntries;
+                break;
+            default: // Others (e.g. "--- beginning of crash" reports)
+                targetArrayList = otherEntries;
+                break;
+        }
+
+        for (int i=0; i<targetArrayList.size();i++)
+            ((ConstraintLayout)targetArrayList.get(i)).setVisibility(visibility);
     }
 
     /**

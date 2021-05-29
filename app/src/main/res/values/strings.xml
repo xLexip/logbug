@@ -1,5 +1,10 @@
 <resources>
     <string name="app_name">Logbug</string>
 
+    <string name="apply">Apply</string>
     <string name="enable_autoscroll">Enable Autoscroll</string>
+    <string name="filter_string_descripting">Filter by a string</string>
+    <string name="filter_title">Filter</string>
+    <string name="show_searchbar">Show Searchbar</string>
+
 </resources>

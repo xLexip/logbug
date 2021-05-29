@@ -17,9 +17,10 @@
     </style>
 
     <!-- Theme specific colors -->
-    <color name="fg">#FFFFFF</color>
+    <color name="fg">@color/white</color>
     <color name="bg">@color/dark</color>
-    <color name="actionBar">#65000000</color>
+    <color name="bg_secondary">#F20C171B</color>
+    <color name="actionBar">#0C171B</color>
     <color name="devider">#33000000</color>
     <color name="selection">#32ABBDD1</color>
 
